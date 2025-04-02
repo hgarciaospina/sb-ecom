@@ -30,3 +30,4 @@ application.yml
 test-output/
 coverage/
 
+HELP.md
