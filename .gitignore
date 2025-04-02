@@ -1,33 +1,32 @@
-HELP.md
+# Build directories
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+bin/
+out/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+# IDE configuration files
+.idea/
 .vscode/
+*.iml
+
+# Dependency files
+.mvn/
+pom.xml.tag
+pom.xml.releaseBackup
+dependency-reduced-pom.xml
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Sensitive credentials and configurations
+application.properties
+application.yml
+.env
+
+# Test output and coverage reports
+test-output/
+coverage/
+
