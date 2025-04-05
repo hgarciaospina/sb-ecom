@@ -3,18 +3,21 @@ package com.ecommerce.project.service;
 import com.ecommerce.project.exception.CategoryNotFoundException;
 import com.ecommerce.project.exception.InvalidCategoryException;
 import com.ecommerce.project.model.Category;
+import com.ecommerce.project.repositories.CategoryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
-    private static Long nextId = 1L;
-    private final List<Category> categories = new ArrayList<>();
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @Override
     public List<Category> getAllCategories() {
+        var categories = categoryRepository.findAll();
         if (categories.isEmpty()) {
             throw new CategoryNotFoundException("No categories available.");
         }
@@ -26,8 +29,7 @@ public class CategoryServiceImpl implements CategoryService {
         if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
             throw new InvalidCategoryException("Category name cannot be empty.");
         }
-        category.setCategoryId(nextId++);
-        categories.add(category);
+        categoryRepository.save(category);
     }
 
     @Override
@@ -36,23 +38,20 @@ public class CategoryServiceImpl implements CategoryService {
             throw new InvalidCategoryException("Category name cannot be empty.");
         }
 
-        return categories.stream()
-                .filter(c -> c.getCategoryId().equals(categoryId))
-                .findFirst()
+        return categoryRepository.findById(categoryId)
                 .map(existingCategory -> {
                     existingCategory.setCategoryName(category.getCategoryName());
-                    return existingCategory;
+                    return categoryRepository.save(existingCategory);
                 })
                 .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + categoryId + " not found"));
     }
 
     @Override
     public void deleteCategory(Long categoryId) {
-        categories.stream()
-                .filter(c -> c.getCategoryId().equals(categoryId))
-                .findFirst()
-                .ifPresentOrElse(categories::remove,
-                        () -> { throw new CategoryNotFoundException("Category with categoryId: " + categoryId + " not found."); });
+        categoryRepository.findById(categoryId)
+                .ifPresentOrElse(
+                        category -> categoryRepository.delete(category),
+                        () -> { throw new CategoryNotFoundException("Category with categoryId: " + categoryId + " not found."); }
+                );
     }
-
 }
