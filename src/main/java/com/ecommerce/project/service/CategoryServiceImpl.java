@@ -41,6 +41,9 @@ public class CategoryServiceImpl implements CategoryService {
         if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
             throw new InvalidCategoryException("Category name cannot be empty.");
         }
+        if (category.getCategoryName().trim().length() < 5) {
+            throw new InvalidCategoryException("Category name must be at least 5 characters long.");
+        }
 
         return categoryRepository.findById(categoryId)
                 .map(existingCategory -> {
