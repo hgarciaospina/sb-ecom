@@ -1,5 +1,6 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.exception.DuplicateValueException;
 import com.ecommerce.project.exception.EntityNotFoundException;
 import com.ecommerce.project.exception.InvalidLengthException;
 import com.ecommerce.project.model.Category;
@@ -26,6 +27,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void createCategory(Category category) {
+        Category savedCategory = categoryRepository.findByCategoryName(category.getCategoryName());
+        if (savedCategory != null){
+            throw new DuplicateValueException("Category with the name " + category.getCategoryName() + " already exists !!!");
+        }
         if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
             throw new InvalidLengthException("Category name cannot be empty.");
         }
