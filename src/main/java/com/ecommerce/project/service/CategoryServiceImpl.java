@@ -1,7 +1,7 @@
 package com.ecommerce.project.service;
 
-import com.ecommerce.project.exception.CategoryNotFoundException;
-import com.ecommerce.project.exception.InvalidCategoryException;
+import com.ecommerce.project.exception.EntityNotFoundException;
+import com.ecommerce.project.exception.InvalidLengthException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.repositories.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ public class CategoryServiceImpl implements CategoryService {
     public List<Category> getAllCategories() {
         var categories = categoryRepository.findAll();
         if (categories.isEmpty()) {
-            throw new CategoryNotFoundException("No categories available.");
+            throw new EntityNotFoundException("No categories available.");
         }
         return categories;
     }
@@ -27,10 +27,10 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public void createCategory(Category category) {
         if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
-            throw new InvalidCategoryException("Category name cannot be empty.");
+            throw new InvalidLengthException("Category name cannot be empty.");
         }
         if (category.getCategoryName().length() < 5) {
-            throw new InvalidCategoryException("Category name must be at least 5 characters long.");
+            throw new InvalidLengthException("Category name must be at least 5 characters long.");
         }
 
         categoryRepository.save(category);
@@ -39,10 +39,10 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Category updateCategory(Category category, Long categoryId) {
         if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
-            throw new InvalidCategoryException("Category name cannot be empty.");
+            throw new InvalidLengthException("Category name cannot be empty.");
         }
         if (category.getCategoryName().trim().length() < 5) {
-            throw new InvalidCategoryException("Category name must be at least 5 characters long.");
+            throw new InvalidLengthException("Category name must be at least 5 characters long.");
         }
 
         return categoryRepository.findById(categoryId)
@@ -50,7 +50,7 @@ public class CategoryServiceImpl implements CategoryService {
                     existingCategory.setCategoryName(category.getCategoryName());
                     return categoryRepository.save(existingCategory);
                 })
-                .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + categoryId + " not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Category with ID " + categoryId + " not found"));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.findById(categoryId)
                 .ifPresentOrElse(
                         category -> categoryRepository.delete(category),
-                        () -> { throw new CategoryNotFoundException("Category with categoryId: " + categoryId + " not found."); }
+                        () -> { throw new EntityNotFoundException("Category with categoryId: " + categoryId + " not found."); }
                 );
     }
 }

@@ -8,13 +8,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(CategoryNotFoundException.class)
-    public ResponseEntity<String> handleCategoryNotFoundException(CategoryNotFoundException ex) {
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<String> handleCategoryNotFoundException(EntityNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidCategoryException.class)
-    public ResponseEntity<String> handleInvalidCategoryException(InvalidCategoryException ex) {
+    @ExceptionHandler(InvalidLengthException.class)
+    public ResponseEntity<String> handleInvalidCategoryException(InvalidLengthException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
