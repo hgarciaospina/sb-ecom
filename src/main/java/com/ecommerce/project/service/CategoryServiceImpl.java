@@ -4,11 +4,10 @@ import com.ecommerce.project.exception.DuplicateValueException;
 import com.ecommerce.project.exception.EntityNotFoundException;
 import com.ecommerce.project.exception.InvalidLengthException;
 import com.ecommerce.project.model.Category;
+import com.ecommerce.project.payload.CategoryResponse;
 import com.ecommerce.project.repositories.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
@@ -17,7 +16,7 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryRepository categoryRepository;
 
     @Override
-    public List<Category> getAllCategories() {
+    public CategoryResponse getAllCategories() {
         var categories = categoryRepository.findAll();
         if (categories.isEmpty()) {
             throw new EntityNotFoundException("No categories available.");
