@@ -26,8 +26,8 @@ public class CategoryController {
 
     @PostMapping("/admin/categories")
     public ResponseEntity<CategoryDTO> createCategory(@RequestBody CategoryDTO categoryDTO) {
-        CategoryDTO createdCategory = categoryService.createCategory(categoryDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdCategory);
+        CategoryDTO createdCategoryDTO = categoryService.createCategory(categoryDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdCategoryDTO);
     }
 
     @DeleteMapping("/admin/categories/{categoryId}")
