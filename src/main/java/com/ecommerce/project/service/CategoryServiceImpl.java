@@ -4,24 +4,35 @@ import com.ecommerce.project.exception.DuplicateValueException;
 import com.ecommerce.project.exception.EntityNotFoundException;
 import com.ecommerce.project.exception.InvalidLengthException;
 import com.ecommerce.project.model.Category;
+import com.ecommerce.project.payload.CategoryDTO;
 import com.ecommerce.project.payload.CategoryResponse;
 import com.ecommerce.project.repositories.CategoryRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private ModelMapper modelMapper;
+
 
     @Override
     public CategoryResponse getAllCategories() {
-        var categories = categoryRepository.findAll();
-        if (categories.isEmpty()) {
+        List<CategoryDTO> categoryDTOS = categoryRepository.findAll().stream()
+                .map(category -> modelMapper.map(category, CategoryDTO.class))
+                .toList();
+
+        if (categoryDTOS.isEmpty()) {
             throw new EntityNotFoundException("No categories available.");
         }
-        return categories;
+
+        return new CategoryResponse(categoryDTOS);
     }
 
     @Override
