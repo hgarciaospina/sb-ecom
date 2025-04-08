@@ -57,18 +57,19 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Category updateCategory(Category category, Long categoryId) {
-        if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
+    public CategoryDTO updateCategory(CategoryDTO categoryDTO, Long categoryId) {
+        if (categoryDTO.getCategoryName() == null || categoryDTO.getCategoryName().trim().isEmpty()) {
             throw new InvalidLengthException("Category name cannot be empty.");
         }
-        if (category.getCategoryName().trim().length() < 5) {
+
+        if (categoryDTO.getCategoryName().trim().length() < 5) {
             throw new InvalidLengthException("Category name must be at least 5 characters long.");
         }
 
         return categoryRepository.findById(categoryId)
                 .map(existingCategory -> {
-                    existingCategory.setCategoryName(category.getCategoryName());
-                    return categoryRepository.save(existingCategory);
+                    existingCategory.setCategoryName(categoryDTO.getCategoryName());
+                    return modelMapper.map(categoryRepository.save(existingCategory), CategoryDTO.class);
                 })
                 .orElseThrow(() -> new EntityNotFoundException("Category with ID " + categoryId + " not found"));
     }
