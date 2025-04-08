@@ -36,19 +36,24 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public void createCategory(Category category) {
-        Category savedCategory = categoryRepository.findByCategoryName(category.getCategoryName());
-        if (savedCategory != null){
-            throw new DuplicateValueException("Category with the name " + category.getCategoryName() + " already exists !!!");
-        }
-        if (category.getCategoryName() == null || category.getCategoryName().trim().isEmpty()) {
+    public CategoryDTO createCategory(CategoryDTO categoryDTO) {
+        if (categoryDTO.getCategoryName() == null || categoryDTO.getCategoryName().trim().isEmpty()) {
             throw new InvalidLengthException("Category name cannot be empty.");
         }
-        if (category.getCategoryName().length() < 5) {
+
+        if (categoryDTO.getCategoryName().length() < 5) {
             throw new InvalidLengthException("Category name must be at least 5 characters long.");
         }
 
-        categoryRepository.save(category);
+        if (categoryRepository.findByCategoryName(categoryDTO.getCategoryName()) != null){
+            throw new DuplicateValueException("Category with the name " + categoryDTO.getCategoryName() + " already exists !!!");
+        }
+
+        Category category = modelMapper.map(categoryDTO, Category.class);
+
+        Category savedCategory = categoryRepository.save(category);
+
+        return modelMapper.map(savedCategory, CategoryDTO.class);
     }
 
     @Override
