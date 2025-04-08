@@ -75,11 +75,12 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public void deleteCategory(Long categoryId) {
-        categoryRepository.findById(categoryId)
-                .ifPresentOrElse(
-                        category -> categoryRepository.delete(category),
-                        () -> { throw new EntityNotFoundException("Category with categoryId: " + categoryId + " not found."); }
-                );
+    public CategoryDTO deleteCategory(Long categoryId) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new EntityNotFoundException("Category with categoryId: " + categoryId + " not found."));
+
+        categoryRepository.delete(category);
+
+        return modelMapper.map(category, CategoryDTO.class);
     }
 }
