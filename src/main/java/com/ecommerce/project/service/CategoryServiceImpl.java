@@ -40,7 +40,14 @@ public class CategoryServiceImpl implements CategoryService {
                 .map(category -> modelMapper.map(category, CategoryDTO.class))
                 .toList();
 
-        return new CategoryResponse(categoryDTOS);
+        return new CategoryResponse(
+                categoryDTOS,
+                categoryPage.getNumber(),
+                categoryPage.getSize(),
+                categoryPage.getTotalElements(),
+                categoryPage.getTotalPages(),
+                categoryPage.isLast()
+        );
     }
 
     @Override
