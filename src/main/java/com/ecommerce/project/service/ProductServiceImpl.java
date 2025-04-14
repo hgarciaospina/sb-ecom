@@ -22,6 +22,7 @@ public class ProductServiceImpl implements ProductService {
     private CategoryRepository categoryRepository;
     @Autowired
     private ModelMapper modelMapper;
+
     @Override
     public ProductDTO addProduct(Long categoryId, Product product) {
         Category category = categoryRepository.findById(categoryId)
@@ -58,8 +59,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse searchByCategory(Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
-            .orElseThrow(() ->
-                    new EntityNotFoundException("Category", "categoryId", categoryId));
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Category", "categoryId", categoryId));
 
         List<Product> products = productRepository.findByCategoryOrderByPriceAsc(category);
 
@@ -106,5 +107,16 @@ public class ProductServiceImpl implements ProductService {
         Product savedProduct = productRepository.save(productFromDb);
 
         return modelMapper.map(savedProduct, ProductDTO.class);
+    }
+
+    @Override
+    public ProductDTO deleteProduct(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Product", "productId", productId));
+
+        productRepository.delete(product);
+
+        return modelMapper.map(product, ProductDTO.class);
+
     }
 }
