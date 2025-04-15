@@ -58,15 +58,15 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
         if (categoryDTO.getCategoryName() == null || categoryDTO.getCategoryName().trim().isEmpty()) {
-            throw new InvalidLengthException("Category name cannot be empty.");
+            throw new InvalidLengthException("Category name cannot be empty !");
         }
 
         if (categoryDTO.getCategoryName().length() < 5) {
-            throw new InvalidLengthException("Category name must be at least 5 characters long.");
+            throw new InvalidLengthException("Category name must be at least 5 characters long !");
         }
 
         if (categoryRepository.findByCategoryName(categoryDTO.getCategoryName()) != null){
-            throw new DuplicateValueException("Category with the name " + categoryDTO.getCategoryName() + " already exists !!!");
+            throw new DuplicateValueException("Category with the name " + categoryDTO.getCategoryName() + " already exists !");
         }
 
         Category category = modelMapper.map(categoryDTO, Category.class);
@@ -79,11 +79,11 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryDTO updateCategory(CategoryDTO categoryDTO, Long categoryId) {
         if (categoryDTO.getCategoryName() == null || categoryDTO.getCategoryName().trim().isEmpty()) {
-            throw new InvalidLengthException("Category name cannot be empty.");
+            throw new InvalidLengthException("Category name cannot be empty !");
         }
 
         if (categoryDTO.getCategoryName().trim().length() < 5) {
-            throw new InvalidLengthException("Category name must be at least 5 characters long.");
+            throw new InvalidLengthException("Category name must be at least 5 characters long !");
         }
 
         return categoryRepository.findById(categoryId)
@@ -91,7 +91,7 @@ public class CategoryServiceImpl implements CategoryService {
                     existingCategory.setCategoryName(categoryDTO.getCategoryName());
                     return modelMapper.map(categoryRepository.save(existingCategory), CategoryDTO.class);
                 })
-                .orElseThrow(() -> new EntityNotFoundException("CateGORY","categoryId",categoryId));
+                .orElseThrow(() -> new EntityNotFoundException("Category","categoryId",categoryId));
     }
 
     @Override

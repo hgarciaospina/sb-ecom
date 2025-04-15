@@ -1,6 +1,9 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.exception.APIException;
+import com.ecommerce.project.exception.DuplicateValueException;
 import com.ecommerce.project.exception.EntityNotFoundException;
+import com.ecommerce.project.exception.InvalidLengthException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.Product;
 import com.ecommerce.project.payload.ProductDTO;
@@ -37,6 +40,30 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() ->
                         new EntityNotFoundException("Category", "categoryId", categoryId));
 
+        if (productDTO.getProductName() == null
+                || productDTO.getProductName().trim().isEmpty()
+                ||  productDTO.getProductName().isBlank()) {
+            throw new InvalidLengthException("Product name cannot be empty !");
+        }
+
+        if (productDTO.getProductName().length() < 5) {
+            throw new InvalidLengthException("Product name must be at least 5 characters long !");
+        }
+
+        if (productDTO.getDescription() == null
+                || productDTO.getDescription().trim().isEmpty()
+                ||  productDTO.getDescription().isBlank()) {
+            throw new InvalidLengthException("Product description cannot be empty !");
+        }
+
+        if (productDTO.getDescription().length() < 5) {
+            throw new InvalidLengthException("Product description must be at least 5 characters long !");
+        }
+
+        if (productRepository.findByProductName(productDTO.getProductName()) != null) {
+            throw new DuplicateValueException("Product with the name " + productDTO.getProductName() + " already exists !");
+        }
+
         Product product = modelMapper.map(productDTO, Product.class);
         product.setImage("default.png");
         product.setCategory(category);
@@ -56,6 +83,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse getAllProducts() {
         List<Product> products = productRepository.findAll();
+        if (products.isEmpty()) {
+            throw new APIException("No products available !");
+        }
+
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();
@@ -73,7 +104,6 @@ public class ProductServiceImpl implements ProductService {
 
         List<Product> products = productRepository.findByCategoryOrderByPriceAsc(category);
 
-
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();
@@ -85,7 +115,14 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse searchByKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            throw new InvalidLengthException("keyword cannot be empty !");
+        }
+
         List<Product> products = productRepository.findByProductNameLikeIgnoreCase('%' + keyword + '%');
+        if (products.isEmpty()) {
+            throw new APIException("No products available with keyword " + keyword + " !");
+        }
 
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
