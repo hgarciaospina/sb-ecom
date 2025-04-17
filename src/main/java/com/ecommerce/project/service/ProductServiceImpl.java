@@ -145,12 +145,19 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponse searchByKeyword(String keyword) {
+    public ProductResponse searchByKeyword(String keyword, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Page<Product> pageProducts = productRepository.findByProductNameLikeIgnoreCase('%' + keyword + '%', pageDetails);
+
         if (keyword == null || keyword.trim().isEmpty()) {
             throw new InvalidLengthException("keyword cannot be empty !");
         }
 
-        List<Product> products = productRepository.findByProductNameLikeIgnoreCase('%' + keyword + '%');
+        List<Product> products = pageProducts.getContent();
         if (products.isEmpty()) {
             throw new APIException("No products available with keyword " + keyword + " !");
         }
@@ -159,9 +166,14 @@ public class ProductServiceImpl implements ProductService {
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();
 
-        ProductResponse productResponse = new ProductResponse();
-        productResponse.setContent(productDTOS);
-        return productResponse;
+        return new ProductResponse(
+                productDTOS,
+                pageProducts.getNumber(),
+                pageProducts.getSize(),
+                pageProducts.getTotalElements(),
+                pageProducts.getTotalPages(),
+                pageProducts.isLast()
+        );
 
     }
 
