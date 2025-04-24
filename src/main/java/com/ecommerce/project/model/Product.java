@@ -20,16 +20,26 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "product_id")
     private Long productId;
+    @Column(name = "product_name")
     private String productName;
+    @Column(name = "image")
     private String image;
+    @Column(name = "description")
     private String description;
+    @Column(name = "quantity")
     private Integer quantity;
+    @Column(name = "price")
     private double price;
+    @Column(name = "discount")
     private double discount;
+    @Column(name = "special_price")
     private double specialPrice;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
 
+    @ManyToOne
+    @JoinColumn(name = "seller_id")
+    private User user;
 }
