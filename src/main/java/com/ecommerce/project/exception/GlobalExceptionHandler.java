@@ -38,4 +38,10 @@ public class GlobalExceptionHandler {
         APIResponse apiResponse = new APIResponse(message, false);
         return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
     }
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<APIResponse> handleBadCredentialsException(BadCredentialsException ex) {
+        APIResponse apiResponse = new APIResponse("Invalid username or password", false);
+        return new ResponseEntity<>(apiResponse, HttpStatus.UNAUTHORIZED);
+    }
+
 }
