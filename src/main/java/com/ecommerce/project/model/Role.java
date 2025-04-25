@@ -12,6 +12,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 @Entity
 @NoArgsConstructor
@@ -31,5 +33,9 @@ public class Role {
 
     public Role(AppRole roleName) {
         this.roleName = roleName;
+    }
+    // Helper method to map Role to SimpleGrantedAuthority
+    public GrantedAuthority toGrantedAuthority() {
+        return new SimpleGrantedAuthority(roleName.name());
     }
 }
