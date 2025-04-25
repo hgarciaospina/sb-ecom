@@ -4,8 +4,8 @@ import com.ecommerce.project.security.jwt.JwtUtils;
 import com.ecommerce.project.security.request.LoginRequest;
 import com.ecommerce.project.security.response.UserInfoResponse;
 import com.ecommerce.project.security.services.UserDetailsImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,9 +27,15 @@ public class AuthController {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    /**
+     * Authenticate user with username and password, then return JWT and user info.
+     *
+     * @param loginRequest the login request payload
+     * @return ResponseEntity with user details and JWT
+     */
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        // Try authentication. Let the exception propagate if it fails
+    public ResponseEntity<UserInfoResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
+        // Perform authentication using the authentication manager
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
@@ -37,21 +43,21 @@ public class AuthController {
                 )
         );
 
-        // Save authentication in context
+        // Set authentication in the security context
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Get user details
+        // Get authenticated user's details
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-        // Generate token
+        // Generate JWT token using the user details
         String jwtToken = jwtUtils.generateTokenFromUsername(userDetails);
 
-        // Get roles
+        // Extract roles from user authorities
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .toList();
+                .toList(); // Java 16+ alternative to Collectors.toList()
 
-        // Prepare response
+        // Build and return the response with user info and token
         UserInfoResponse response = new UserInfoResponse(
                 userDetails.getId(),
                 userDetails.getUsername(),
