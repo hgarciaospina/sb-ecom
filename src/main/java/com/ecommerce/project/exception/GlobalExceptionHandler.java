@@ -14,6 +14,13 @@ public class GlobalExceptionHandler {
         APIResponse apiResponse = new APIResponse(message, false);
         return new ResponseEntity<>(apiResponse, HttpStatus.NOT_FOUND);
     }
+    @ExceptionHandler(InvalidFormatException.class)
+    public ResponseEntity<APIResponse> handleInvalidFormatException(InvalidFormatException ex) {
+        String message = ex.getMessage();
+        APIResponse apiResponse = new APIResponse(message, false);
+        return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(InvalidLengthException.class)
     public ResponseEntity<APIResponse> handleInvalidCategoryException(InvalidLengthException ex) {
         String message = ex.getMessage();
