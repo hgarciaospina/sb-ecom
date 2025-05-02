@@ -123,12 +123,12 @@ public class AuthController {
             throw new InvalidLengthException("The password cannot be empty !");
         }
 
-        if (signUpRequest.getPassword().length() < 5) {
-            throw new InvalidLengthException("The password must be at least 5 characters long !");
+        if (signUpRequest.getPassword().length() < 6) {
+            throw new InvalidLengthException("The password must be at least 6 characters long !");
         }
 
-        if (signUpRequest.getPassword().length() > 120) {
-            throw new InvalidLengthException("The password must have a maximum of 120 characters long !");
+        if (signUpRequest.getPassword().length() > 40) {
+            throw new InvalidLengthException("The password must have a maximum of 40 characters long !");
         }
 
         if (Boolean.TRUE.equals(userRepository.existsByUserName(signUpRequest.getUsername()))) {
@@ -141,6 +141,12 @@ public class AuthController {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Email is already in use!"));
+        }
+
+        if(signUpRequest.getRole().isEmpty()){
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: The rol cannot be empty !"));
         }
 
         // Create a new user account

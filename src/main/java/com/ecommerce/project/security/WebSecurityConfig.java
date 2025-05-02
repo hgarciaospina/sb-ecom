@@ -47,6 +47,7 @@ public class WebSecurityConfig {
     // Public endpoints that don't require authentication
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/auth/**", "/v3/api-docs/**", "/h2-console/**",
+            "/api/public/**",
             "/swagger-ui/**", "/api/test/**", "/images/**"
     };
 
@@ -63,18 +64,18 @@ public class WebSecurityConfig {
      */
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
     }
 
     /**
      * Provides the authentication manager.
      */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
     }
 
     /**
@@ -121,12 +122,12 @@ public class WebSecurityConfig {
     @Bean
     public CommandLineRunner initData(RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            // Create or retrieve application roles
+            // Create roles if not exist
             Role userRole = getOrCreateRole(roleRepository, AppRole.ROLE_USER);
             Role sellerRole = getOrCreateRole(roleRepository, AppRole.ROLE_SELLER);
             Role adminRole = getOrCreateRole(roleRepository, AppRole.ROLE_ADMIN);
 
-            // Define sets of roles for each default user
+            // Define roles for default users
             Set<Role> userRoles = Set.of(userRole);
             Set<Role> sellerRoles = Set.of(sellerRole);
             Set<Role> adminRoles = Set.of(userRole, sellerRole, adminRole);
@@ -161,15 +162,18 @@ public class WebSecurityConfig {
      * @param roles           the roles to assign
      */
     private void createUserIfNotExists(UserRepository userRepository, String username, String email, String encodedPassword, Set<Role> roles) {
-        if (!userRepository.existsByUserName(username)) {
-            User user = new User(username, email, encodedPassword);
-            user.setRoles(roles);
-            userRepository.save(user);
-        } else {
-            userRepository.findByUserName(username).ifPresent(user -> {
-                user.setRoles(roles);
-                userRepository.save(user);
-            });
-        }
+        userRepository.findByUserName(username).ifPresentOrElse(
+                user -> {
+                    // Update roles if user already exists
+                    user.setRoles(roles);
+                    userRepository.save(user);
+                },
+                () -> {
+                    // Create new user if not exist
+                    User user = new User(username, email, encodedPassword);
+                    user.setRoles(roles);
+                    userRepository.save(user);
+                }
+        );
     }
 }
