@@ -52,9 +52,6 @@ public class AuthController {
 
     /**
      * Authenticates the user and returns a JWT token along with user details.
-     *
-     * @param loginRequest the login request containing username and password
-     * @return the authenticated user's info with JWT token
      */
     @PostMapping("/signin")
     public ResponseEntity<UserInfoResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
@@ -77,90 +74,35 @@ public class AuthController {
                 userDetails.getId(),
                 userDetails.getUsername(),
                 roles,
-                jwtCookie.toString()
-        );
+                jwtCookie.toString());
 
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,
-                jwtCookie.toString())
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                 .body(response);
     }
 
     /**
      * Registers a new user with the provided signup request data.
-     *
-     * @param signUpRequest the registration request containing username, email, password, and roles
-     * @return response indicating success or failure
      */
     @PostMapping("/signup")
     public ResponseEntity<MessageResponse> registerUser(@RequestBody SignupRequest signUpRequest) {
-
-        if (signUpRequest.getUsername() == null || signUpRequest.getUsername().trim().isEmpty()) {
-            throw new InvalidLengthException("The username cannot be empty !");
-        }
-
-        if (signUpRequest.getUsername().length() < 3) {
-            throw new InvalidLengthException("The username must be at least 3 characters long !");
-        }
-
-        if (signUpRequest.getUsername().length() > 20) {
-            throw new InvalidLengthException("The username must have a maximum of 20 characters long !");
-        }
-
-        if (signUpRequest.getEmail() == null || signUpRequest.getEmail().trim().isEmpty()) {
-            throw new InvalidLengthException("The email cannot be empty !");
-        }
-
-        if (signUpRequest.getEmail().length() < 6) {
-            throw new InvalidLengthException("The email must be at least 6 characters long !");
-        }
-
-        if (signUpRequest.getEmail().length() > 50) {
-            throw new InvalidLengthException("The email must have a maximum of 50 characters long !");
-        }
-
-        String emailRegex = "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$";
-        if (!signUpRequest.getEmail().matches(emailRegex)) {
-            throw new InvalidFormatException("User", "email", signUpRequest.getEmail());
-        }
-
-        if (signUpRequest.getPassword() == null || signUpRequest.getPassword().trim().isEmpty()) {
-            throw new InvalidLengthException("The password cannot be empty !");
-        }
-
-        if (signUpRequest.getPassword().length() < 6) {
-            throw new InvalidLengthException("The password must be at least 6 characters long !");
-        }
-
-        if (signUpRequest.getPassword().length() > 40) {
-            throw new InvalidLengthException("The password must have a maximum of 40 characters long !");
-        }
+        validateSignUpRequest(signUpRequest);
 
         if (Boolean.TRUE.equals(userRepository.existsByUserName(signUpRequest.getUsername()))) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Username is already taken!"));
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
         }
 
         if (Boolean.TRUE.equals(userRepository.existsByEmail(signUpRequest.getEmail()))) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Email is already in use!"));
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
         }
 
-        if(signUpRequest.getRole().isEmpty()){
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: The rol cannot be empty !"));
-        }
+        Set<Role> roles = getRolesFromStrings(signUpRequest.getRole());
 
-        // Create a new user account
         User user = new User(
                 signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
                 passwordEncoder.encode(signUpRequest.getPassword())
         );
-
-        Set<Role> roles = getRolesFromStrings(signUpRequest.getRole());
         user.setRoles(roles);
         userRepository.save(user);
 
@@ -168,23 +110,54 @@ public class AuthController {
     }
 
     /**
-     * Resolves a set of AppRole names (as Strings) into Role entities.
-     * If no roles are provided, assigns ROLE_USER by default.
-     *
-     * @param strRoles the role names from the signup request
-     * @return a set of resolved Role entities
+     * Validates input fields from the sign-up request.
+     */
+    private void validateSignUpRequest(SignupRequest request) {
+        validateField("username", request.getUsername(), 3, 20);
+        validateEmail(request.getEmail());
+        validateField("password", request.getPassword(), 6, 40);
+
+        if (request.getRole() == null || request.getRole().isEmpty()) {
+            throw new InvalidLengthException("The role cannot be empty!");
+        }
+    }
+
+    /**
+     * Validates a string field for null, empty, and length.
+     */
+    private void validateField(String fieldName, String value, int minLength, int maxLength) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new InvalidLengthException("The " + fieldName + " cannot be empty!");
+        }
+
+        if (value.length() < minLength) {
+            throw new InvalidLengthException("The " + fieldName + " must be at least " + minLength + " characters long!");
+        }
+
+        if (value.length() > maxLength) {
+            throw new InvalidLengthException("The " + fieldName + " must have a maximum of " + maxLength + " characters!");
+        }
+    }
+
+    /**
+     * Validates the email format and length.
+     */
+    private void validateEmail(String email) {
+        validateField("email", email, 6, 50);
+
+        String emailRegex = "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$";
+        if (!email.matches(emailRegex)) {
+            throw new InvalidFormatException("User", "email", email);
+        }
+    }
+
+    /**
+     * Resolves a set of role names into Role entities.
      */
     private Set<Role> getRolesFromStrings(Set<String> strRoles) {
         Set<Role> roles = new HashSet<>();
 
-        if (strRoles == null || strRoles.isEmpty()) {
-            Role defaultRole = roleRepository.findByRoleName(AppRole.ROLE_USER)
-                    .orElseThrow(() -> new RuntimeException("Error: Role USER not found."));
-            roles.add(defaultRole);
-            return roles;
-        }
-
-        for (String roleName : strRoles) {
+        for (String roleName : Optional.ofNullable(strRoles).orElse(Set.of("user"))) {
             AppRole appRole = switch (roleName.toLowerCase()) {
                 case "admin" -> AppRole.ROLE_ADMIN;
                 case "seller" -> AppRole.ROLE_SELLER;
