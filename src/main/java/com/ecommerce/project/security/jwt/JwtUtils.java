@@ -71,12 +71,27 @@ public class JwtUtils {
         return ResponseCookie.from(jwtCookieName, jwt)
                 .path("/api")
                 .maxAge(24 * 60L * 60L) // 1 day in seconds
-                .httpOnly(true)
-                .secure(true) // Consider setting to false if not using HTTPS during development
+                .httpOnly(false)
+                .secure(false) // Consider setting to false if not using HTTPS during development
                 .build();
     }
 
     /**
+     * Generates a cookie that effectively removes the JWT by setting its value to null.
+     * This is typically used during logout to clear the authentication cookie.
+     *
+     * @return a ResponseCookie with a null value and appropriate path set
+     */
+    public ResponseCookie generateClearedJwtCookie() {
+        return ResponseCookie.from(jwtCookieName, "")
+                .path("/api")
+                .maxAge(0)
+                .httpOnly(true)
+                .build();
+    }
+
+    /**
+     *
      * Generates a signed JWT token from the provided username.
      *
      * @param username the username to embed in the token

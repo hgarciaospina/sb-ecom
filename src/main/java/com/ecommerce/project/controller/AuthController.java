@@ -27,7 +27,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * REST controller responsible for user authentication and registration.
@@ -115,6 +114,21 @@ public class AuthController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         return ResponseEntity.ok(createUserInfoResponse(userDetails, null));
     }
+
+    /**
+     * Signs out the current user by clearing the JWT authentication cookie.
+     *
+     * @return a response entity with a cleared cookie and confirmation message
+     */
+    @PostMapping("/signout")
+    public ResponseEntity<MessageResponse> signOutUser() {
+        ResponseCookie clearedJwtCookie = jwtUtils.generateClearedJwtCookie();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, clearedJwtCookie.toString())
+                .body(new MessageResponse("You've been signed out!"));
+    }
+
 
     /**
      * Creates a UserInfoResponse based on user details and optional JWT token.
