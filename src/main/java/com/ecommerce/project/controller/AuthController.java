@@ -27,9 +27,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * Controller responsible for user authentication and registration.
+ * REST controller responsible for user authentication and registration.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -51,38 +52,27 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     /**
-     * Authenticates the user and returns a JWT token along with user details.
+     * Authenticates a user and returns user details with JWT in a cookie.
      */
     @PostMapping("/signin")
     public ResponseEntity<UserInfoResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
+                        loginRequest.getPassword())
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
 
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList();
-
-        UserInfoResponse response = new UserInfoResponse(
-                userDetails.getId(),
-                userDetails.getUsername(),
-                roles,
-                jwtCookie.toString());
-
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-                .body(response);
+                .body(createUserInfoResponse(userDetails, jwtCookie.toString()));
     }
 
     /**
-     * Registers a new user with the provided signup request data.
+     * Registers a new user with validated input and assigned roles.
      */
     @PostMapping("/signup")
     public ResponseEntity<MessageResponse> registerUser(@RequestBody SignupRequest signUpRequest) {
@@ -96,13 +86,13 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
         }
 
-        Set<Role> roles = getRolesFromStrings(signUpRequest.getRole());
-
         User user = new User(
                 signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
                 passwordEncoder.encode(signUpRequest.getPassword())
         );
+
+        Set<Role> roles = resolveRoles(signUpRequest.getRole());
         user.setRoles(roles);
         userRepository.save(user);
 
@@ -110,7 +100,37 @@ public class AuthController {
     }
 
     /**
-     * Validates input fields from the sign-up request.
+     * Returns the current authenticated user's username.
+     */
+    @GetMapping("/username")
+    public String currentUserName(Authentication authentication) {
+        return authentication != null ? authentication.getName() : "";
+    }
+
+    /**
+     * Returns detailed user information without the JWT token.
+     */
+    @GetMapping("/user")
+    public ResponseEntity<UserInfoResponse> getUserDetails(Authentication authentication) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        return ResponseEntity.ok(createUserInfoResponse(userDetails, null));
+    }
+
+    /**
+     * Creates a UserInfoResponse based on user details and optional JWT token.
+     */
+    private UserInfoResponse createUserInfoResponse(UserDetailsImpl userDetails, String jwtToken) {
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+        return jwtToken != null
+                ? new UserInfoResponse(userDetails.getId(), userDetails.getUsername(), roles, jwtToken)
+                : new UserInfoResponse(userDetails.getId(), userDetails.getUsername(), roles);
+    }
+
+    /**
+     * Validates input fields from the signup request.
      */
     private void validateSignUpRequest(SignupRequest request) {
         validateField("username", request.getUsername(), 3, 20);
@@ -123,7 +143,7 @@ public class AuthController {
     }
 
     /**
-     * Validates a string field for null, empty, and length.
+     * Validates a string field for null, empty, and character length.
      */
     private void validateField(String fieldName, String value, int minLength, int maxLength) {
         if (value == null || value.trim().isEmpty()) {
@@ -140,7 +160,7 @@ public class AuthController {
     }
 
     /**
-     * Validates the email format and length.
+     * Validates email format and length.
      */
     private void validateEmail(String email) {
         validateField("email", email, 6, 50);
@@ -152,12 +172,13 @@ public class AuthController {
     }
 
     /**
-     * Resolves a set of role names into Role entities.
+     * Resolves a set of role names into actual Role entities.
      */
-    private Set<Role> getRolesFromStrings(Set<String> strRoles) {
+    private Set<Role> resolveRoles(Set<String> roleNames) {
+        Set<String> rolesInput = Optional.ofNullable(roleNames).orElse(Set.of("user"));
         Set<Role> roles = new HashSet<>();
 
-        for (String roleName : Optional.ofNullable(strRoles).orElse(Set.of("user"))) {
+        for (String roleName : rolesInput) {
             AppRole appRole = switch (roleName.toLowerCase()) {
                 case "admin" -> AppRole.ROLE_ADMIN;
                 case "seller" -> AppRole.ROLE_SELLER;
