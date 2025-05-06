@@ -10,12 +10,15 @@ import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.repositories.CartItemRepository;
 import com.ecommerce.project.repositories.CartRepository;
 import com.ecommerce.project.repositories.ProductRepository;
+import com.ecommerce.project.util.AuthUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Stream;
 
+@Service
 public class CartServiceImpl implements  CartService{
     @Autowired
     private CartRepository cartRepository;
@@ -95,7 +98,8 @@ public class CartServiceImpl implements  CartService{
         cart.setTotalPrice(0.00);
         cart.setUser(authUtil.loggedInUser());
 
-        Cart newCart = cartRepository.save(cart);
+        Cart newCart;
+        newCart = cartRepository.save(cart);
 
         return newCart;
 
