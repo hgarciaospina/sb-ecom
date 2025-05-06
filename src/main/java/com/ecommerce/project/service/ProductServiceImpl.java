@@ -95,7 +95,7 @@ public class ProductServiceImpl implements ProductService {
 
         List<Product> products = pageProducts.getContent();
         if (products.isEmpty()) {
-            throw new APIException("No products available !");
+            throw new EntityNotFoundException("No products available !");
         }
 
         List<ProductDTO> productDTOS = products.stream()
@@ -159,7 +159,7 @@ public class ProductServiceImpl implements ProductService {
 
         List<Product> products = pageProducts.getContent();
         if (products.isEmpty()) {
-            throw new APIException("No products available with keyword " + keyword + " !");
+            throw new EntityNotFoundException("No products available with keyword " + keyword + " !");
         }
 
         List<ProductDTO> productDTOS = products.stream()

@@ -38,7 +38,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         List<Category> categories = categoryPage.getContent();
         if (categories.isEmpty()) {
-            throw new APIException("No categories available.");
+            throw new EntityNotFoundException("No categories available.");
         }
 
         List<CategoryDTO> categoryDTOS = categories.stream()

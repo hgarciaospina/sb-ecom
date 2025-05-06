@@ -15,7 +15,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.List;;
 import java.util.stream.Stream;
 
 @Service
@@ -49,7 +49,7 @@ public class CartServiceImpl implements  CartService{
         }
 
         if (product.getQuantity() == 0) {
-            throw new APIException(product.getProductName() + " is not available");
+            throw new EntityNotFoundException(product.getProductName() + " is not available");
         }
 
         if (product.getQuantity() < quantity) {
@@ -87,6 +87,32 @@ public class CartServiceImpl implements  CartService{
 
         return cartDTO;
     }
+
+    @Override
+    public List<CartDTO> getAllCarts() {
+        List<Cart> carts = cartRepository.findAll();
+
+        if (carts.isEmpty()) {
+            throw new EntityNotFoundException("No cart exists");
+        }
+
+        return carts.stream()
+                .map(this::convertToCartDTO)
+                .toList();
+    }
+
+    private CartDTO convertToCartDTO(Cart cart) {
+        CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
+
+        List<ProductDTO> productsDTO = cart.getCartItems().stream()
+                .map(item -> modelMapper.map(item.getProduct(), ProductDTO.class))
+                .toList();
+
+        cartDTO.setProducts(productsDTO);
+        return cartDTO;
+    }
+
+
 
     private Cart createCart() {
         Cart userCart = cartRepository.findCartByEmail(authUtil.loggedInEmail());

@@ -1,5 +1,6 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.exception.EntityNotFoundException;
 import com.ecommerce.project.exception.InvalidFormatException;
 import com.ecommerce.project.exception.InvalidLengthException;
 import com.ecommerce.project.model.AppRole;
@@ -161,7 +162,7 @@ public class AuthServiceImpl implements AuthService {
             };
 
             Role role = roleRepository.findByRoleName(appRole)
-                    .orElseThrow(() -> new RuntimeException("Error: Role " + appRole.name() + " not found."));
+                    .orElseThrow(() -> new EntityNotFoundException("Error: Role " + appRole.name() + " not found."));
             roles.add(role);
         }
 

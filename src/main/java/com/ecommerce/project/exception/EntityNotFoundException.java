@@ -20,4 +20,8 @@ public class EntityNotFoundException extends RuntimeException {
         this.field = field;
         this.fieldId = fieldId;
     }
+
+    public EntityNotFoundException(String message) {
+        super(message);
+    }
 }
