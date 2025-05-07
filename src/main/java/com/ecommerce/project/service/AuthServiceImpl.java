@@ -1,8 +1,8 @@
 package com.ecommerce.project.service;
 
-import com.ecommerce.project.exception.ResourceNotFoundException;
-import com.ecommerce.project.exception.InvalidFormatException;
-import com.ecommerce.project.exception.InvalidLengthException;
+import com.ecommerce.project.exceptions.ResourceNotFoundException;
+import com.ecommerce.project.exceptions.InvalidFormatException;
+import com.ecommerce.project.exceptions.InvalidLengthException;
 import com.ecommerce.project.model.AppRole;
 import com.ecommerce.project.model.Role;
 import com.ecommerce.project.model.User;

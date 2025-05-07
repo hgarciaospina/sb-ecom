@@ -1,8 +1,8 @@
 package com.ecommerce.project.service;
 
-import com.ecommerce.project.exception.DuplicateValueException;
-import com.ecommerce.project.exception.ResourceNotFoundException;
-import com.ecommerce.project.exception.InvalidLengthException;
+import com.ecommerce.project.exceptions.DuplicateValueException;
+import com.ecommerce.project.exceptions.ResourceNotFoundException;
+import com.ecommerce.project.exceptions.InvalidLengthException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.payload.CategoryDTO;
 import com.ecommerce.project.payload.CategoryResponse;

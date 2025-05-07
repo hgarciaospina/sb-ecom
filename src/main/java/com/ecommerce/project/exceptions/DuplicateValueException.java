@@ -1,4 +1,4 @@
-package com.ecommerce.project.exception;
+package com.ecommerce.project.exceptions;
 
 public class DuplicateValueException extends RuntimeException {
     public DuplicateValueException(String message) {

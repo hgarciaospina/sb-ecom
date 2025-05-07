@@ -1,4 +1,4 @@
-package com.ecommerce.project.exception;
+package com.ecommerce.project.exceptions;
 
 /**
  * Exception thrown when an input format is invalid for a specific field.

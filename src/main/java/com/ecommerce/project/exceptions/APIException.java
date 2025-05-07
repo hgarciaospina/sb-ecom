@@ -1,4 +1,4 @@
-package com.ecommerce.project.exception;
+package com.ecommerce.project.exceptions;
 
 import java.io.Serial;
 
