@@ -1,8 +1,7 @@
 package com.ecommerce.project.service;
 
-import com.ecommerce.project.exception.APIException;
 import com.ecommerce.project.exception.DuplicateValueException;
-import com.ecommerce.project.exception.EntityNotFoundException;
+import com.ecommerce.project.exception.ResourceNotFoundException;
 import com.ecommerce.project.exception.InvalidLengthException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.payload.CategoryDTO;
@@ -38,7 +37,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         List<Category> categories = categoryPage.getContent();
         if (categories.isEmpty()) {
-            throw new EntityNotFoundException("No categories available.");
+            throw new ResourceNotFoundException("No categories available.");
         }
 
         List<CategoryDTO> categoryDTOS = categories.stream()
@@ -91,13 +90,13 @@ public class CategoryServiceImpl implements CategoryService {
                     existingCategory.setCategoryName(categoryDTO.getCategoryName());
                     return modelMapper.map(categoryRepository.save(existingCategory), CategoryDTO.class);
                 })
-                .orElseThrow(() -> new EntityNotFoundException("Category","categoryId",categoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Category","categoryId",categoryId));
     }
 
     @Override
     public CategoryDTO deleteCategory(Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new EntityNotFoundException("Category","categoryId",categoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Category","categoryId",categoryId));
 
         categoryRepository.delete(category);
 

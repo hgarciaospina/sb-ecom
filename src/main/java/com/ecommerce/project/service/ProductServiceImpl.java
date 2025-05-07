@@ -2,7 +2,7 @@ package com.ecommerce.project.service;
 
 import com.ecommerce.project.exception.APIException;
 import com.ecommerce.project.exception.DuplicateValueException;
-import com.ecommerce.project.exception.EntityNotFoundException;
+import com.ecommerce.project.exception.ResourceNotFoundException;
 import com.ecommerce.project.exception.InvalidLengthException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.Product;
@@ -42,7 +42,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() ->
-                        new EntityNotFoundException("Category", "categoryId", categoryId));
+                        new ResourceNotFoundException("Category", "categoryId", categoryId));
 
         if (productDTO.getProductName() == null
                 || productDTO.getProductName().trim().isEmpty()
@@ -95,7 +95,7 @@ public class ProductServiceImpl implements ProductService {
 
         List<Product> products = pageProducts.getContent();
         if (products.isEmpty()) {
-            throw new EntityNotFoundException("No products available !");
+            throw new ResourceNotFoundException("No products available !");
         }
 
         List<ProductDTO> productDTOS = products.stream()
@@ -116,7 +116,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse searchByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() ->
-                        new EntityNotFoundException("Category", "categoryId", categoryId));
+                        new ResourceNotFoundException("Category", "categoryId", categoryId));
 
         Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
@@ -159,7 +159,7 @@ public class ProductServiceImpl implements ProductService {
 
         List<Product> products = pageProducts.getContent();
         if (products.isEmpty()) {
-            throw new EntityNotFoundException("No products available with keyword " + keyword + " !");
+            throw new ResourceNotFoundException("No products available with keyword " + keyword + " !");
         }
 
         List<ProductDTO> productDTOS = products.stream()
@@ -181,7 +181,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO updateProduct(Long productId, ProductDTO productDTO) {
         // Get the existing product from DB
         Product productFromDb = productRepository.findById(productId)
-                .orElseThrow(() -> new EntityNotFoundException("Product", "productId", productId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         Product product = modelMapper.map(productDTO, Product.class);
 
@@ -203,7 +203,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDTO deleteProduct(Long productId) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new EntityNotFoundException("Product", "productId", productId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         productRepository.delete(product);
 
@@ -215,7 +215,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO updateProductImage(Long productId, MultipartFile image) throws IOException {
         // Get the product froM DB
         Product productFromDb = productRepository.findById(productId)
-                .orElseThrow(() -> new EntityNotFoundException("Product", "productId", productId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         // Upload image to server
         // Get the file name of uploaded image
