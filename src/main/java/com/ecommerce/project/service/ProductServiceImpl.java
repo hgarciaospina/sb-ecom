@@ -4,6 +4,7 @@ import com.ecommerce.project.exceptions.*;
 import com.ecommerce.project.model.*;
 import com.ecommerce.project.payload.*;
 import com.ecommerce.project.repositories.*;
+import com.ecommerce.project.util.AuthUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +13,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Service implementation for managing product operations such as
- * adding, updating, deleting products and performing searches.
+ * Implementation of {@link ProductService} that manages product operations such as:
+ * - Adding, updating, and deleting products
+ * - Searching products by keyword or category
+ * - Updating product images
+ * - Tracking price changes with history
  */
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -38,12 +43,23 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private FileService fileService;
+    @Autowired
+    private AuthUtil authUtil;
+
+    @Autowired
+    private PriceHistoryService priceHistoryService;
 
     @Value("${project.image}")
     private String path;
 
     /**
-     * Adds a new product to a specific category.
+     * Adds a new product under the specified category.
+     *
+     * @param categoryId the ID of the category to which the product belongs
+     * @param productDTO the product data to add
+     * @return the saved product as a DTO
+     * @throws ResourceNotFoundException if the category is not found
+     * @throws DuplicateValueException if a product with the same name already exists
      */
     @Override
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
@@ -60,13 +76,20 @@ public class ProductServiceImpl implements ProductService {
         product.setImage("default.png");
         product.setCategory(category);
         product.setSpecialPrice(calculateSpecialPrice(product));
-        Product savedProduct = productRepository.save(product);
 
+        Product savedProduct = productRepository.save(product);
         return modelMapper.map(savedProduct, ProductDTO.class);
     }
 
     /**
-     * Retrieves all products with pagination and sorting.
+     * Retrieves a paginated and sorted list of all products.
+     *
+     * @param pageNumber page number to retrieve
+     * @param pageSize number of items per page
+     * @param sortBy field to sort by
+     * @param sortOrder direction of sorting (asc/desc)
+     * @return a paginated list of products
+     * @throws ResourceNotFoundException if no products are found
      */
     @Override
     public ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
@@ -81,7 +104,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Retrieves products by category with pagination and sorting.
+     * Retrieves a paginated list of products by category.
+     *
+     * @param categoryId the ID of the category
+     * @param pageNumber the page number
+     * @param pageSize the size of each page
+     * @param sortBy field to sort by
+     * @param sortOrder direction of sorting (asc/desc)
+     * @return a paginated response of products within the category
+     * @throws ResourceNotFoundException if the category is not found or contains no products
      */
     @Override
     public ProductResponse searchByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
@@ -92,14 +123,23 @@ public class ProductServiceImpl implements ProductService {
         Page<Product> productPage = productRepository.findByCategoryOrderByPriceAsc(category, pageable);
 
         if (productPage.isEmpty()) {
-            throw new APIException("No products available with category " + category.getCategoryName() + "!");
+            throw new APIException("No products available in category " + category.getCategoryName() + "!");
         }
 
         return mapToProductResponse(productPage);
     }
 
     /**
-     * Searches products by keyword in product name.
+     * Searches for products using a keyword match on the product name.
+     *
+     * @param keyword search keyword
+     * @param pageNumber page number
+     * @param pageSize size of each page
+     * @param sortBy field to sort by
+     * @param sortOrder sort direction (asc/desc)
+     * @return a paginated list of matched products
+     * @throws InvalidLengthException if keyword is blank or null
+     * @throws ResourceNotFoundException if no matches are found
      */
     @Override
     public ProductResponse searchByKeyword(String keyword, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
@@ -118,26 +158,50 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Updates an existing product by ID.
+     * Updates an existing product by ID. Also logs the price change to the price history
+     * if the product price is updated.
+     *
+     * @param productId the ID of the product to update
+     * @param productDTO the updated product data
+     * @return the updated product DTO
+     * @throws ResourceNotFoundException if the product does not exist
      */
     @Override
     public ProductDTO updateProduct(Long productId, ProductDTO productDTO) {
         Product productFromDb = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
-        Product updatedProduct = modelMapper.map(productDTO, Product.class);
-        updateProductFields(productFromDb, updatedProduct);
+        double oldPrice = productFromDb.getPrice();
+
+        updateProductFields(productFromDb, productDTO);
+
+        if (Double.compare(oldPrice, productFromDb.getPrice()) != 0) {
+            PriceHistory priceHistory = new PriceHistory();
+            priceHistory.setProduct(productFromDb);
+            priceHistory.setOldPrice(oldPrice);
+            priceHistory.setNewPrice(productFromDb.getPrice());
+            priceHistory.setChangedAt(LocalDateTime.now());
+            priceHistory.setChangedBy(authUtil.loggedInUser());
+
+            priceHistoryService.savePriceHistory(priceHistory);
+        }
 
         Product savedProduct = productRepository.save(productFromDb);
 
         cartRepository.findCartsByProductId(productId).forEach(cart ->
-                cartService.updateProductInCarts(cart.getCartId(), productId));
+                cartService.updateProductInCarts(cart.getCartId(), productId)
+        );
 
         return modelMapper.map(savedProduct, ProductDTO.class);
     }
 
+
     /**
-     * Deletes a product and removes it from all carts.
+     * Deletes a product by ID and removes it from all associated carts.
+     *
+     * @param productId the ID of the product to delete
+     * @return the deleted product as a DTO
+     * @throws ResourceNotFoundException if the product does not exist
      */
     @Override
     public ProductDTO deleteProduct(Long productId) {
@@ -148,12 +212,17 @@ public class ProductServiceImpl implements ProductService {
                 .forEach(cart -> cartService.deleteProductFromCart(cart.getCartId(), productId));
 
         productRepository.delete(product);
-
         return modelMapper.map(product, ProductDTO.class);
     }
 
     /**
-     * Updates a product's image file.
+     * Updates the image of a product.
+     *
+     * @param productId the ID of the product
+     * @param image the new image file
+     * @return the updated product as a DTO
+     * @throws ResourceNotFoundException if the product is not found
+     * @throws IOException if the image upload fails
      */
     @Override
     public ProductDTO updateProductImage(Long productId, MultipartFile image) throws IOException {
@@ -167,10 +236,13 @@ public class ProductServiceImpl implements ProductService {
         return modelMapper.map(updatedProduct, ProductDTO.class);
     }
 
-    // ----------- PRIVATE HELPERS ------------
+    // ---------- PRIVATE HELPERS ----------
 
     /**
-     * Validates product name and description.
+     * Validates that product name and description are not null, empty, or too short.
+     *
+     * @param productDTO the DTO to validate
+     * @throws InvalidLengthException if validation fails
      */
     private void validateProductData(ProductDTO productDTO) {
         if (productDTO.getProductName() == null || productDTO.getProductName().trim().isEmpty()) {
@@ -189,14 +261,21 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Calculates special price based on discount.
+     * Calculates the special price of a product based on its discount.
+     *
+     * @param product the product for which to calculate the price
+     * @return the discounted special price
      */
     private static double calculateSpecialPrice(Product product) {
         return product.getPrice() - ((product.getDiscount() * 0.01) * product.getPrice());
     }
 
     /**
-     * Returns sort object based on field and direction.
+     * Creates a {@link Sort} object based on the given field and order.
+     *
+     * @param sortBy field to sort by
+     * @param sortOrder sort direction ("asc" or "desc")
+     * @return a configured {@link Sort} object
      */
     private Sort getSort(String sortBy, String sortOrder) {
         return sortOrder.equalsIgnoreCase("asc") ?
@@ -204,7 +283,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Maps a page of products to a ProductResponse.
+     * Converts a {@link Page} of {@link Product} to a {@link ProductResponse}.
+     *
+     * @param pageProducts the page of product entities
+     * @return a response object containing DTOs and pagination info
      */
     private ProductResponse mapToProductResponse(Page<Product> pageProducts) {
         List<ProductDTO> productDTOs = pageProducts.getContent().stream()
@@ -222,14 +304,17 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Updates product fields.
+     * Updates the fields of a product entity from a DTO.
+     *
+     * @param product the product entity to update
+     * @param dto the DTO containing new values
      */
-    private void updateProductFields(Product original, Product updated) {
-        original.setProductName(updated.getProductName());
-        original.setDescription(updated.getDescription());
-        original.setQuantity(updated.getQuantity());
-        original.setDiscount(updated.getDiscount());
-        original.setPrice(updated.getPrice());
-        original.setSpecialPrice(calculateSpecialPrice(updated));
+    private void updateProductFields(Product product, ProductDTO dto) {
+        product.setProductName(dto.getProductName());
+        product.setDescription(dto.getDescription());
+        product.setQuantity(dto.getQuantity());
+        product.setDiscount(dto.getDiscount());
+        product.setPrice(dto.getPrice());
+        product.setSpecialPrice(calculateSpecialPrice(product));
     }
 }
