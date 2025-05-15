@@ -1,6 +1,7 @@
 package com.ecommerce.project.service;
 
 import com.ecommerce.project.exceptions.InvalidLengthException;
+import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.Address;
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.AddressDTO;
@@ -8,6 +9,8 @@ import com.ecommerce.project.repositories.AddressRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class AddressServiceImpl implements AddressService {
@@ -34,6 +37,27 @@ public class AddressServiceImpl implements AddressService {
         Address savedAddress = addressRepository.save(address);
 
         return modelMapper.map(savedAddress, AddressDTO.class);
+    }
+
+    @Override
+    public List<AddressDTO> getAddresses() {
+        List<Address> addresses = addressRepository.findAll();
+        if (addresses.isEmpty()) {
+            throw new ResourceNotFoundException("No addresses available.");
+        }
+
+        return addresses.stream()
+                .map(address -> modelMapper.map(address, AddressDTO.class))
+                .toList();
+    }
+
+    @Override
+    public AddressDTO getAddressById(Long addressId) {
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Addresses", "addressId", addressId));
+
+        return modelMapper.map(address, AddressDTO.class);
+
     }
 
     private void validateField(String value, int minLength, String propertyName) {
