@@ -5,15 +5,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Data
@@ -29,6 +27,8 @@ public class Address {
     private String street;
     @Column(name = "building_name")
     private String buildingName;
+    @Column(name = "city")
+    private String city;
     @Column(name = "state")
     private String state;
     @Column(name = "country")
@@ -36,13 +36,14 @@ public class Address {
     @Column(name = "pin_code")
     private String pinCode;
 
-    @ToString.Exclude
-    @ManyToMany(mappedBy = "addresses")
-    private List<User> users = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    public Address(String street, String buildingName, String state, String country, String pinCode) {
+    public Address(String street, String buildingName, String city, String state, String country, String pinCode) {
         this.street = street;
         this.buildingName = buildingName;
+        this.city = city;
         this.state = state;
         this.country = country;
         this.pinCode = pinCode;
