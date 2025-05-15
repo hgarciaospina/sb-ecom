@@ -60,6 +60,17 @@ public class AddressServiceImpl implements AddressService {
 
     }
 
+    @Override
+    public List<AddressDTO> getUserAddresses(User user) {
+        List<Address> addresses = user.getAddresses();
+        if (addresses.isEmpty()) {
+            throw new ResourceNotFoundException("No addresses available.");
+        }
+        return  addresses.stream()
+                .map(address -> modelMapper.map(address, AddressDTO.class))
+                .toList();
+    }
+
     private void validateField(String value, int minLength, String propertyName) {
         if (value == null || value.trim().isEmpty()) {
             throw new InvalidLengthException("The value of '" + propertyName + "' cannot be empty.");
