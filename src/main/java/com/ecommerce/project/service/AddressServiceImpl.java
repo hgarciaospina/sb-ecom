@@ -3,8 +3,10 @@ package com.ecommerce.project.service;
 import com.ecommerce.project.exceptions.InvalidLengthException;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.Address;
+import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.AddressDTO;
+import com.ecommerce.project.payload.CategoryDTO;
 import com.ecommerce.project.repositories.AddressRepository;
 import com.ecommerce.project.repositories.UserRepository;
 import org.modelmapper.ModelMapper;
@@ -121,6 +123,20 @@ public class AddressServiceImpl implements AddressService {
         userRepository.save(user);
 
         return modelMapper.map(updatedAddress, AddressDTO.class);
+    }
+
+    @Override
+    public AddressDTO deleteAddress(Long addressId) {
+        Address addressFromDb = addressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Address","addressId",addressId));
+
+        User user = addressFromDb.getUser();
+        user.getAddresses().removeIf(address -> address.getAddressId().equals(addressId));
+        userRepository.save(user);
+
+        addressRepository.delete(addressFromDb);
+
+        return modelMapper.map(addressFromDb, AddressDTO.class);
     }
 
     /**
