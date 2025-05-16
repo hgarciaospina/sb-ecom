@@ -2,6 +2,7 @@ package com.ecommerce.project.controller;
 
 import com.ecommerce.project.model.User;
 import com.ecommerce.project.payload.AddressDTO;
+import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.service.AddressService;
 import com.ecommerce.project.util.AuthUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,11 @@ public class AddressController {
         User user = authUtil.loggedInUser();
         List<AddressDTO> addresses = addressService.getUserAddresses(user);
         return new ResponseEntity<>(addresses, HttpStatus.OK);
+    }
+    @PutMapping("/addresses/{addressId}")
+    public ResponseEntity<AddressDTO> updateAddressById(@PathVariable Long addressId, @RequestBody AddressDTO addressDTO) {
+        AddressDTO updatedAddressDTO = addressService.updateAddress(addressId, addressDTO);
+        return new ResponseEntity<>(updatedAddressDTO, HttpStatus.OK);
     }
 
 }
