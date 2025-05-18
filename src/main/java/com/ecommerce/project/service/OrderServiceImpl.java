@@ -5,6 +5,7 @@ import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.*;
 import com.ecommerce.project.payload.OrderDTO;
 import com.ecommerce.project.payload.OrderItemDTO;
+import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.repositories.*;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
@@ -126,7 +127,16 @@ public class OrderServiceImpl implements OrderService {
 
         // Map and assign order items
         List<OrderItemDTO> itemsDTO = orderItems.stream()
-                .map(item -> modelMapper.map(item, OrderItemDTO.class))
+                .map(item -> {
+                    OrderItemDTO itemDTO = modelMapper.map(item, OrderItemDTO.class);
+
+                    // Fix: Set product stock in productDTO.quantity for better clarity in the response
+                    ProductDTO productDTO = modelMapper.map(item.getProduct(), ProductDTO.class);
+                    productDTO.setQuantity(item.getProduct().getStock()); // <-- Here is the fix
+
+                    itemDTO.setProductDTO(productDTO);
+                    return itemDTO;
+                })
                 .toList();
         orderDTO.setOrderItemsDTO(itemsDTO);
 
