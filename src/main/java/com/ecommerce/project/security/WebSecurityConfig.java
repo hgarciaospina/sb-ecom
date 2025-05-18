@@ -159,6 +159,7 @@ public class WebSecurityConfig {
             createUserIfNotExists(userRepository, "user1", "user1@example.com", passwordEncoder.encode("password1"), userRoles);
             createUserIfNotExists(userRepository, "seller1", "seller1@example.com", passwordEncoder.encode("password2"), sellerRoles);
             createUserIfNotExists(userRepository, "admin", "admin@example.com", passwordEncoder.encode("adminPass"), adminRoles);
+            createUserIfNotExists(userRepository, "gosling", "james@gosling.com", passwordEncoder.encode("superUser"), adminRoles);
         };
     }
 
