@@ -28,8 +28,8 @@ public class Product {
     private String image;
     @Column(name = "description")
     private String description;
-    @Column(name = "quantity")
-    private Integer quantity;
+    @Column(name = "stock")
+    private Integer stock;
     @Column(name = "price")
     private double price;
     @Column(name = "discount")
