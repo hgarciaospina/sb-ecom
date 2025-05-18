@@ -61,14 +61,7 @@ public class CartServiceImpl implements CartService {
             throw new APIException("Product " + product.getProductName() + " already exists in the cart");
         }
 
-        if (product.getStock() == 0) {
-            throw new APIException(product.getProductName() + " is not available");
-        }
-
-        if (product.getStock() < quantity) {
-            throw new APIException("Please, make an order of the " + product.getProductName()
-                    + " less than or equal to the quantity " + product.getStock() + ".");
-        }
+        validateStockAvailability(product, quantity);
 
         CartItem newCartItem = new CartItem();
         newCartItem.setProduct(product);
@@ -87,7 +80,7 @@ public class CartServiceImpl implements CartService {
         List<CartItem> cartItems = cart.getCartItems();
         Stream<ProductDTO> productStream = cartItems.stream().map(item -> {
             ProductDTO map = modelMapper.map(item.getProduct(), ProductDTO.class);
-            map.setStock(item.getQuantity());
+            map.setQuantity(item.getQuantity());
             return map;
         });
 
@@ -104,15 +97,23 @@ public class CartServiceImpl implements CartService {
     @Override
     public List<CartDTO> getAllCarts() {
         List<Cart> carts = cartRepository.findAll();
+
         if (carts.isEmpty()) {
             throw new APIException("No cart exists");
         }
 
         return carts.stream().map(cart -> {
             CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
+
             List<ProductDTO> products = cart.getCartItems().stream()
-                    .map(p -> modelMapper.map(p.getProduct(), ProductDTO.class))
+                    .map(cartItem -> {
+                        ProductDTO productDTO = modelMapper.map(cartItem.getProduct(), ProductDTO.class);
+                        /* Set the quantity from CartItem */
+                        productDTO.setQuantity(cartItem.getQuantity());
+                        return productDTO;
+                    })
                     .toList();
+
             cartDTO.setProducts(products);
             return cartDTO;
         }).toList();
@@ -134,15 +135,20 @@ public class CartServiceImpl implements CartService {
         }
 
         CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
-        cart.getCartItems().forEach(c -> c.getProduct().setStock(c.getQuantity()));
 
         List<ProductDTO> products = cart.getCartItems().stream()
-                .map(p -> modelMapper.map(p.getProduct(), ProductDTO.class))
+                .map(cartItem -> {
+                    ProductDTO productDTO = modelMapper.map(cartItem.getProduct(), ProductDTO.class);
+                    /* Set the quantity from CartItem */
+                    productDTO.setQuantity(cartItem.getQuantity());
+                    return productDTO;
+                })
                 .toList();
 
         cartDTO.setProducts(products);
         return cartDTO;
     }
+
 
     /**
      * Updates the quantity of a product in the authenticated user's cart.
@@ -156,62 +162,40 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDTO updateProductQuantityInCart(Long productId, Integer quantity) {
         String emailId = authUtil.loggedInEmail();
-        Cart userCart = cartRepository.findCartByEmail(emailId);
-        Long cartId = userCart.getCartId();
 
-        Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", cartId));
+        Cart cart = cartRepository.findCartByEmail(emailId);
+        if (cart == null) {
+            throw new ResourceNotFoundException("Cart", "emailId", emailId);
+        }
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
-        if (product.getStock() == 0) {
-            throw new APIException(product.getProductName() + " is not available");
-        }
+        validateStockAvailability(product, quantity);
 
-        if (product.getStock() < quantity) {
-            throw new APIException("Please, make an order of the " + product.getProductName()
-                    + " less than or equal to the quantity " + product.getStock() + ".");
-        }
-
-        CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cartId, productId);
+        CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cart.getCartId(), productId);
         if (cartItem == null) {
             throw new APIException("Product " + product.getProductName() + " not available in the cart!!!");
         }
 
         int newQuantity = cartItem.getQuantity() + quantity;
-
         if (newQuantity < 0) {
             throw new APIException("The resulting quantity cannot be negative.");
         }
 
         if (newQuantity == 0) {
-            deleteProductFromCart(cartId, productId);
+            deleteProductFromCart(cart.getCartId(), productId);
+            cartItemRepository.deleteById(cartItem.getCartItemId());
         } else {
-            cartItem.setProductPrice(product.getSpecialPrice());
-            cartItem.setQuantity(newQuantity);
-            cartItem.setDiscount(product.getDiscount());
-            cart.setTotalPrice(cart.getTotalPrice() + (product.getSpecialPrice() * quantity));
+            updateCartItem(cartItem, product, newQuantity);
+            updateCartTotalPrice(cart, product.getSpecialPrice() * quantity);
             cartRepository.save(cart);
+            cartItemRepository.save(cartItem);
         }
 
-        CartItem updatedItem = cartItemRepository.save(cartItem);
-        if (updatedItem.getQuantity() == 0) {
-            cartItemRepository.deleteById(updatedItem.getCartItemId());
-        }
-
-        CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
-        List<CartItem> cartItems = cart.getCartItems();
-
-        Stream<ProductDTO> productStream = cartItems.stream().map(item -> {
-            ProductDTO prd = modelMapper.map(item.getProduct(), ProductDTO.class);
-            prd.setStock(item.getQuantity());
-            return prd;
-        });
-
-        cartDTO.setProducts(productStream.toList());
-        return cartDTO;
+        return buildCartDTO(cart);
     }
+
 
     /**
      * Creates a new cart for the authenticated user if one does not already exist.
@@ -281,5 +265,35 @@ public class CartServiceImpl implements CartService {
         cart.setTotalPrice(cartPrice + (cartItem.getProductPrice() * cartItem.getQuantity()));
 
         cartItemRepository.save(cartItem);
+    }
+    private void validateStockAvailability(Product product, int quantity) {
+        if (product.getStock() == 0) {
+            throw new APIException(product.getProductName() + " is not available");
+        }
+        if (product.getStock() < quantity) {
+            throw new APIException("Please, make an order of the " + product.getProductName()
+                    + " less than or equal to the quantity " + product.getStock() + ".");
+        }
+    }
+    private void updateCartItem(CartItem cartItem, Product product, int quantity) {
+        cartItem.setQuantity(quantity);
+        cartItem.setProductPrice(product.getSpecialPrice());
+        cartItem.setDiscount(product.getDiscount());
+    }
+    private void updateCartTotalPrice(Cart cart, double amountToAdd) {
+        cart.setTotalPrice(cart.getTotalPrice() + amountToAdd);
+    }
+
+    private CartDTO buildCartDTO(Cart cart) {
+        CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
+        List<ProductDTO> products = cart.getCartItems().stream()
+                .map(item -> {
+                    ProductDTO productDTO = modelMapper.map(item.getProduct(), ProductDTO.class);
+                    // Set the quantity from CartItem
+                    productDTO.setQuantity(item.getQuantity());
+                    return productDTO;
+                }).toList();
+        cartDTO.setProducts(products);
+        return cartDTO;
     }
 }
