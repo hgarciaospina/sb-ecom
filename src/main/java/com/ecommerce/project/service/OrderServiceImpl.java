@@ -4,8 +4,8 @@ import com.ecommerce.project.exceptions.APIException;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.*;
 import com.ecommerce.project.payload.OrderDTO;
-import com.ecommerce.project.payload.OrderItemDTO;
-import com.ecommerce.project.payload.ProductDTO;
+import com.ecommerce.project.payload.OrderItemResponseDTO; // <-- Newly added
+import com.ecommerce.project.payload.ProductSummaryDTO;     // <-- Newly added
 import com.ecommerce.project.repositories.*;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
@@ -125,16 +125,20 @@ public class OrderServiceImpl implements OrderService {
         // Map the saved order to DTO
         OrderDTO orderDTO = modelMapper.map(savedOrder, OrderDTO.class);
 
-        // Map and assign order items
-        List<OrderItemDTO> itemsDTO = orderItems.stream()
+        // Map and assign order items using specialized DTOs
+        List<OrderItemResponseDTO> itemsDTO = orderItems.stream()
                 .map(item -> {
-                    OrderItemDTO itemDTO = modelMapper.map(item, OrderItemDTO.class);
+                    OrderItemResponseDTO itemDTO = new OrderItemResponseDTO();
+                    itemDTO.setOrderItemId(item.getOrderItemId());
+                    itemDTO.setQuantity(item.getQuantity());
+                    itemDTO.setDiscount(item.getDiscount());
+                    itemDTO.setOrderedProductPrice(item.getOrderedProductPrice());
 
-                    // Fix: Set product stock in productDTO.quantity for better clarity in the response
-                    ProductDTO productDTO = modelMapper.map(item.getProduct(), ProductDTO.class);
-                    productDTO.setQuantity(item.getProduct().getStock()); // <-- Here is the fix
+                    // ✅ Fix: Use ProductSummaryDTO to expose stock instead of quantity
+                    ProductSummaryDTO productDTO = modelMapper.map(item.getProduct(), ProductSummaryDTO.class);
+                    productDTO.setStock(item.getProduct().getStock()); // <-- Stock is now explicitly set
 
-                    itemDTO.setProductDTO(productDTO);
+                    itemDTO.setProduct(productDTO);
                     return itemDTO;
                 })
                 .toList();

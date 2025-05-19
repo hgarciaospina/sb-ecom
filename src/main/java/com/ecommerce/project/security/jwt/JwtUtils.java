@@ -55,7 +55,7 @@ public class JwtUtils {
      * @return the JWT string if found, otherwise null
      */
     public String getJwtFromCookies(HttpServletRequest request) {
-        return Optional.of(WebUtils.getCookie(request, jwtCookieName))
+        return Optional.ofNullable(WebUtils.getCookie(request, jwtCookieName))
                 .map(Cookie::getValue)
                 .orElse(null);
     }
