@@ -312,7 +312,7 @@ public class ProductServiceImpl implements ProductService {
     private void updateProductFields(Product product, ProductDTO dto) {
         product.setProductName(dto.getProductName());
         product.setDescription(dto.getDescription());
-        product.setStock(dto.getQuantity());
+        product.setStock(dto.getStock());
         product.setDiscount(dto.getDiscount());
         product.setPrice(dto.getPrice());
         product.setSpecialPrice(calculateSpecialPrice(product));
