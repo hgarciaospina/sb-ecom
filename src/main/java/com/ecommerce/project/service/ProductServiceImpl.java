@@ -52,6 +52,9 @@ public class ProductServiceImpl implements ProductService {
     @Value("${project.image}")
     private String path;
 
+    @Value("${image.base.url}")
+    private String imageBaseUrl;
+
     /**
      * Adds a new product under the specified category.
      *
@@ -290,7 +293,11 @@ public class ProductServiceImpl implements ProductService {
      */
     private ProductResponse mapToProductResponse(Page<Product> pageProducts) {
         List<ProductDTO> productDTOs = pageProducts.getContent().stream()
-                .map(product -> modelMapper.map(product, ProductDTO.class))
+                .map(product -> {
+                    ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
+                    productDTO.setImage(constructImageUrl(product.getImage()));
+                    return productDTO;
+                })
                 .toList();
 
         return new ProductResponse(
@@ -317,4 +324,17 @@ public class ProductServiceImpl implements ProductService {
         product.setPrice(dto.getPrice());
         product.setSpecialPrice(calculateSpecialPrice(product));
     }
+
+    /**
+     * Constructs the full URL for an image by appending the given image name
+     * to the base URL. Ensures that the URL contains exactly one slash ("/")
+     * between the base URL and the image name.
+     *
+     * @param imageName the name of the image file (e.g., "photo.jpg")
+     * @return the full image URL as a String
+     */
+    private String constructImageUrl(String imageName) {
+        return imageBaseUrl.endsWith("/") ? imageBaseUrl + imageName : imageBaseUrl + "/" + imageName;
+    }
+
 }
