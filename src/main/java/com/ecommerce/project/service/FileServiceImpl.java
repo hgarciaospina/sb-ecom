@@ -5,44 +5,56 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class FileServiceImpl implements FileService {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileServiceImpl.class);
-
+    /**
+     * Uploads an image file to the given path, assigning it a unique random name.
+     *
+     * @param path the destination folder path
+     * @param file the image to upload
+     * @return the new random file name
+     * @throws IOException if an I/O error occurs
+     */
     @Override
     public String uploadImage(String path, MultipartFile file) throws IOException {
-        String originalFileName = file.getOriginalFilename();
-        logger.info("Received file upload request. Original filename: {}", originalFileName);
+        // Get original filename and its extension
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+                : "";
 
-        String randomId = UUID.randomUUID().toString();
-        String fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.'));
-        String fileName = randomId + fileExtension;
-        String filePath = path + File.separator + fileName;
+        // Generate unique random file name
+        String fileName = UUID.randomUUID().toString() + extension;
 
-        File folder = new File(path);
-        if (!folder.exists()) {
-            boolean dirCreated = folder.mkdirs();
-            if (dirCreated) {
-                logger.info("Directory '{}' did not exist and was successfully created.", path);
-            } else {
-                logger.warn("Directory '{}' did not exist and could NOT be created. Check permissions.", path);
-            }
-        } else {
-            logger.debug("Upload directory '{}' already exists.", path);
-        }
+        // Create directory if not exists
+        File dir = new File(path);
+        if (!dir.exists()) dir.mkdirs();
 
-        logger.info("Saving file to: {}", filePath);
-        Files.copy(file.getInputStream(), Paths.get(filePath));
-        logger.info("File saved successfully as: {}", fileName);
+        // Copy file to destination
+        Path fullPath = Paths.get(path, fileName);
+        Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
         return fileName;
+    }
+
+    /**
+     * Deletes an image file from the given path unless it's the default image.
+     *
+     * @param path the directory path where the image resides
+     * @param imageName the image file name to delete
+     * @throws IOException if deletion fails
+     */
+    @Override
+    public void deleteImage(String path, String imageName) throws IOException {
+        if (imageName == null || imageName.equals("default.png")) return;
+
+        Path fullPath = Paths.get(path, imageName);
+        if (Files.exists(fullPath)) {
+            Files.delete(fullPath);
+        }
     }
 }
