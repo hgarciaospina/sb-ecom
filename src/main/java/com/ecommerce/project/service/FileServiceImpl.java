@@ -8,29 +8,41 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class FileServiceImpl implements FileService {
+
+    private static final Logger logger = LoggerFactory.getLogger(FileServiceImpl.class);
+
     @Override
     public String uploadImage(String path, MultipartFile file) throws IOException {
-        // File names of current / original file
         String originalFileName = file.getOriginalFilename();
+        logger.info("Received file upload request. Original filename: {}", originalFileName);
 
-        // Generate a unique file name
         String randomId = UUID.randomUUID().toString();
-        String fileName = randomId.concat(originalFileName.substring(originalFileName.lastIndexOf('.')));
+        String fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.'));
+        String fileName = randomId + fileExtension;
         String filePath = path + File.separator + fileName;
 
-        // Check if path exist and create
         File folder = new File(path);
-        if(!folder.exists()){
-            folder.mkdir();
+        if (!folder.exists()) {
+            boolean dirCreated = folder.mkdirs();
+            if (dirCreated) {
+                logger.info("Directory '{}' did not exist and was successfully created.", path);
+            } else {
+                logger.warn("Directory '{}' did not exist and could NOT be created. Check permissions.", path);
+            }
+        } else {
+            logger.debug("Upload directory '{}' already exists.", path);
         }
 
-        // Upload to server
+        logger.info("Saving file to: {}", filePath);
         Files.copy(file.getInputStream(), Paths.get(filePath));
+        logger.info("File saved successfully as: {}", fileName);
 
-        // return file name
         return fileName;
-
     }
 }
