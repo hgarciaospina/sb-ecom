@@ -2,6 +2,7 @@
 target/
 bin/
 out/
+/images/
 
 # IDE configuration files
 .idea/
